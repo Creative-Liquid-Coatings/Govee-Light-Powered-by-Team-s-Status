@@ -32,24 +32,24 @@ def log(msg: str) -> None:
 
 async def main():
     log(f"Started. Polling every {POLL_SECONDS}s. Ctrl+C to stop.")
-    last_bucket = None
+    last_target = None
 
     while True:
         bucket = get_availability()
+        # No fresh presence (Teams idle/closed/signed out) -> turn OFF
+        # rather than holding the last color.
+        target = bucket if bucket else "offline"
 
-        if bucket is None:
-            # Teams not running / no log yet: leave the light as-is.
-            log("presence: unknown (Teams not running?) - no change")
-        elif bucket != last_bucket:
-            rgb = COLORS.get(bucket, None)
+        if target != last_target:
+            rgb = COLORS.get(target)
             desc = "OFF" if rgb is None else f"RGB{rgb}"
+            reason = bucket if bucket else "no signal (Teams idle/closed)"
             ok = await govee_light.apply(rgb)
             status = "ok" if ok else "FAILED"
-            log(f"presence: {bucket}  ->  {desc}  [{status}]")
+            log(f"presence: {reason}  ->  {desc}  [{status}]")
             if ok:
-                last_bucket = bucket
-            # if it failed, leave last_bucket unchanged so we retry next poll
-        # else: no change, do nothing
+                last_target = target
+            # if it failed, leave last_target unchanged so we retry next poll
 
         await asyncio.sleep(POLL_SECONDS)
 
@@ -58,4 +58,11 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nStopped.")
+        log("Stopping - turning light off")
+    finally:
+        # Best-effort: turn the light off on graceful exit. (Won't run on a
+        # hard kill or power-off, which BLE can't cover anyway.)
+        try:
+            asyncio.run(govee_light.apply(None))
+        except Exception:
+            pass

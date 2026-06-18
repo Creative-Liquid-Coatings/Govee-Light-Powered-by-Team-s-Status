@@ -7,6 +7,12 @@ BRIGHTNESS = 0xFF                       # 0x01..0xFF
 # --- Polling ---
 POLL_SECONDS = 5                        # how often to re-check Teams status
 
+# If the newest Teams log hasn't been written to in this many seconds, treat
+# presence as "no signal" (Teams closed / signed out / laptop idle) and turn
+# the light OFF instead of holding the last color. New Teams writes a presence
+# heartbeat every ~5 min, so this must be comfortably above that.
+STALE_AFTER_SECONDS = 600               # 10 minutes
+
 # --- Colors (R, G, B). None = turn the light OFF. ---
 COLORS = {
     "available": (0, 255, 0),     # green

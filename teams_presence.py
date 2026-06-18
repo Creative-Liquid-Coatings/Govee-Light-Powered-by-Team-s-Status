@@ -12,7 +12,8 @@ maps to a known presence bucket, and return the most recent one. Unknown
 import glob
 import os
 import re
-from config import TEAMS_LOG_DIR, AVAILABILITY_MAP
+import time
+from config import TEAMS_LOG_DIR, AVAILABILITY_MAP, STALE_AFTER_SECONDS
 
 # `availability: Busy`  OR  trailing `status Do not disturb` / `status Busy`
 _AVAIL_RE = re.compile(r"availability:\s*([A-Za-z]+)")
@@ -34,11 +35,15 @@ def _normalize(token: str) -> str:
 
 def get_availability() -> str | None:
     """Return a normalized bucket: available/busy/away/offline/unknown,
-    or None if presence couldn't be determined (e.g., Teams not running)."""
+    or None if presence can't be determined OR the log is stale (Teams not
+    actively running). Callers treat None as "turn the light off"."""
     path = _newest_log()
     if not path:
         return None
     try:
+        # Stale log => Teams isn't actively running => no signal.
+        if time.time() - os.path.getmtime(path) > STALE_AFTER_SECONDS:
+            return None
         size = os.path.getsize(path)
         with open(path, "rb") as f:
             if size > _TAIL_BYTES:

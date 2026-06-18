@@ -49,7 +49,10 @@ Start-ScheduledTask -TaskName TeamsGoveeLight    # start
 ## Requirements & caveats
 
 - An always-on PC within ~10 m Bluetooth range of the light.
-- Teams must be running (presence comes from its logs; otherwise the light holds last color).
+- If Teams isn't actively running (closed, signed out, or its newest log goes stale for
+  more than `STALE_AFTER_SECONDS`, default 10 min), the light turns **off**. Note: if the
+  PC itself powers off, the script can't send a final "off" over BLE, so the light keeps
+  its last color until the PC/script is running again.
 - Log parsing is inherently fragile — a Teams update could change the format and break
   presence detection. Check `runtime.log` if colors stop tracking.
 
