@@ -1,0 +1,9 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime / secrets
+runtime.log
+token_cache.bin
+*.bin
